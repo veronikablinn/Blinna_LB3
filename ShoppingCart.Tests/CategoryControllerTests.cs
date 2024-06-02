@@ -14,7 +14,6 @@ namespace ShoppingCart.Tests
         [Fact]
         public void GetCategories_All_ReturnAllCategories()
         {
-            // Arrange
             Mock<ICategoryRepository> repositoryMock = new Mock<ICategoryRepository>();
 
             repositoryMock.Setup(r => r.GetAll(It.IsAny<string>()))
@@ -23,10 +22,8 @@ namespace ShoppingCart.Tests
             mockUnitOfWork.Setup(uow => uow.Category).Returns(repositoryMock.Object);
             var controller = new CategoryController(mockUnitOfWork.Object);
 
-            // Act
             var result = controller.Get();
 
-            // Assert
             Assert.Equal(CategoryDataset.Categories, result.Categories);
         }
     }

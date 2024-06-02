@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ShoppingCart.DataAccess.Repositories;
 using ShoppingCart.DataAccess.ViewModels;
 using Xunit;
 using Moq;
 using ShoppingCart.Models;
 using System.Linq.Expressions;
-
+using Microsoft.AspNetCore.Authorization;
+using ShoppingCart.Web.Areas.Admin.Controllers;
 
 namespace ShoppingCart.Web.Areas.Admin.Controllers
 {
@@ -16,7 +16,6 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
     {
         private IUnitOfWork _unitofWork;
 
-        
         public CategoryController(IUnitOfWork unitofWork)
         {
             _unitofWork = unitofWork;
@@ -30,14 +29,11 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
             return categoryVM;
         }
 
-
         [HttpGet]
         public CategoryVM Get(int id)
         {
             CategoryVM vm = new CategoryVM();
-
             vm.Category = _unitofWork.Category.GetT(x => x.Id == id);
-
             return vm;
         }
 
@@ -54,7 +50,7 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
                 {
                     _unitofWork.Category.Update(vm.Category);
                 }
-                _unitofWork.Save();;
+                _unitofWork.Save();
             }
             else
             {
@@ -75,95 +71,64 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
             _unitofWork.Save();
         }
     }
+}
 
-
+namespace ShoppingCart.Tests
+{
     public class CategoryControllerTests
     {
-
-        
-        public static IEnumerable<object[]> Data_category =>
-        new List<object[]>
+        // Тест 1
+        [Fact]
+        public void deleteData_removes()
         {
-            new object[] { 0, "New category" }, 
-            new object[] { 1, "Existing category" }
-        };
+            int categoryId = 1;
+            var category = new Category { Id = categoryId };
+            var repository_mock = new Mock<ICategoryRepository>();
+            repository_mock.Setup(r => r.GetT(It.IsAny<Expression<Func<Category, bool>>>(), null)).Returns(category);
 
-        [Theory]
-        [MemberData(nameof(Data_category))]
+            var unit_of_work_mock = new Mock<IUnitOfWork>();
+            unit_of_work_mock.Setup(uow => uow.Category).Returns(repository_mock.Object);
 
-        // 1-test
-        public void Create_new_categories_or_Update_categories(int categoryId, string categoryName)
+            var controller = new CategoryController(unit_of_work_mock.Object);
+
+            controller.DeleteData(categoryId);
+
+            repository_mock.Verify(r => r.Delete(category), Times.Once);
+            unit_of_work_mock.Verify(u => u.Save(), Times.Once);
+        }
+
+        // Тест 2
+        [Fact]
+        public void createUpdate_data()
         {
-            // Arrange
-            var category = new Category { Id = categoryId, Name = categoryName };
-            var categoryVM = new CategoryVM { Category = category };
-
+            var categoryVM = new CategoryVM { Category = new Category { Id = 0, Name = "" } }; // Invalid data
             var repository_mock = new Mock<ICategoryRepository>();
             var unit_of_work_mock = new Mock<IUnitOfWork>();
             unit_of_work_mock.Setup(u => u.Category).Returns(repository_mock.Object);
 
             var controller = new CategoryController(unit_of_work_mock.Object);
+            controller.ModelState.AddModelError("Name", "Required");
 
-            // Act
-            controller.CreateUpdate(categoryVM);
-
-            // Assert
-            if (categoryId == 0)
-            {
-                repository_mock.Verify(r => r.Add(category), Times.Once);
-            }
-            else
-            {
-                repository_mock.Verify(r => r.Update(category), Times.Once);
-            }
-
-            unit_of_work_mock.Verify(u => u.Save(), Times.Once);
+            var exception = Assert.Throws<Exception>(() => controller.CreateUpdate(categoryVM));
+            Assert.Equal("Model is invalid", exception.Message);
         }
 
-        // 2-test
+        // Тест 3
         [Fact]
-        public void Get_returns_all_categories()
+        public void nullWhenCategory_NotFound()
         {
-            // Arrange
-            var expectedCategories = new List<Category> { new Category { Id = 1, Name = "Category 1" }, new Category { Id = 2, Name = "Category 2" } };
+            int categoryId = 99; 
             var repository_mock = new Mock<ICategoryRepository>();
-            repository_mock.Setup(r => r.GetAll(null)).Returns(expectedCategories);
+            repository_mock.Setup(r => r.GetT(It.IsAny<Expression<Func<Category, bool>>>(), null)).Returns((Category)null);
 
             var unit_of_work_mock = new Mock<IUnitOfWork>();
             unit_of_work_mock.Setup(uow => uow.Category).Returns(repository_mock.Object);
 
             var controller = new CategoryController(unit_of_work_mock.Object);
 
-            // Act
-            var result = controller.Get();
-
-            // Assert
-            Assert.Equal(expectedCategories, result.Categories);
-        }
-
-        // 3-test
-        [Fact]
-        public void Get_returns_category_with_specified_Id()
-        {
-            // Arrange
-            int categoryId = 1;
-            var expectedCategory = new Category { Id = categoryId, Name = "Category 1" };
-
-            var repository_mock = new Mock<ICategoryRepository>();
-            repository_mock.Setup(r => r.GetT(It.IsAny<Expression<Func<Category, bool>>>(), null))
-                          .Returns(expectedCategory);
-
-            var unit_of_work_mock = new Mock<IUnitOfWork>();
-            unit_of_work_mock.Setup(uow => uow.Category).Returns(repository_mock.Object);
-
-            var controller = new CategoryController(unit_of_work_mock.Object);
-
-            // Act
             var result = controller.Get(categoryId);
 
-            // Assert
-            Assert.Equal(expectedCategory, result.Category);
+            Assert.Null(result.Category);
         }
-
     }
 }

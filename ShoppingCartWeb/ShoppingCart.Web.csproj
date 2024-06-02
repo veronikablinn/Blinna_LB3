@@ -7,6 +7,7 @@
     <UserSecretsId>e4527281-6fe7-4124-b319-2c35eeddf35d</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'ShoppingCartWeb' " />
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.8">
