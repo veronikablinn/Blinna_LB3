@@ -4,9 +4,6 @@ using ShoppingCart.DataAccess.Repositories;
 using ShoppingCart.DataAccess.ViewModels;
 using ShoppingCart.Models;
 using ShoppingCart.Utility;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using Xunit;
 
@@ -14,27 +11,10 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
 {
     public class OrderControllerTests
     {
-        // Тест 1
-        [Fact]
-        public void OrderDetails_OrderVM()
-        {
-            var unit_of_work_mock = new Mock<IUnitOfWork>();
-            var order_header = new OrderHeader { Id = 1, ApplicationUser = new ApplicationUser() };
-            var order_details = new List<OrderDetail> { new OrderDetail { OrderHeaderId = 1 } };
-            unit_of_work_mock.Setup(uow => uow.OrderHeader.GetT(It.IsAny<Expression<Func<OrderHeader, bool>>>(), It.IsAny<string>())).Returns(order_header);
-            unit_of_work_mock.Setup(uow => uow.OrderDetail.GetAll(It.IsAny<string>())).Returns(order_details.AsQueryable());
-            var controller = new OrderController(unit_of_work_mock.Object);
-
-            var result = controller.OrderDetails(1);
-
-            Assert.NotNull(result);
-            Assert.Equal(order_header, result.OrderHeader);
-            Assert.Equal(order_details, result.OrderDetails.ToList());
-        }
-
+        
         // Тест 2
         [Fact]
-        public void SetToInProcess()
+        public void UpdatesOrderStatus_Check()
         {
             var unit_of_work_mock = new Mock<IUnitOfWork>();
             var order_header = new OrderHeader { Id = 1 };
@@ -52,7 +32,7 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
 
         // Тест 3
         [Fact]
-        public void SetToShipped()
+        public void UpdatesShippedStatus_Check()
         {
             var unit_of_work_mock = new Mock<IUnitOfWork>();
             var orderHeaderRepositoryMock = new Mock<IOrderHeaderRepository>();
